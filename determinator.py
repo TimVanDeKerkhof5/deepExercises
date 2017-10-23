@@ -4,10 +4,8 @@ import datetime
 patdf = pd.read_csv("/home/kerkt02/patdata/QUERY_FOR_DM_LGS_OPNAME.csv", header=0, low_memory=False, encoding="ISO-8859-1")
 
 counter = 0
-labelad = 'opname_dt'
-labeldi = 'ontslag_dt'
-labelco = 'OpnameDiagnoseCode'
-patnr = 0
+labelDict = {'opname':'opname_dt', 'ontslag':'ontslag_dt','code':'OpnameDiagnoseCode'}
+patnr = 1
 diagCode = 0
 patchecker = True
 diag = False
@@ -18,20 +16,21 @@ prevdischarge = datetime.datetime(1000, 10, 10).date()
 prevadmission = prevdischarge
 #set prevdischarge & prevadmission to impossible date to prevent errors
 for i in patdf['PATNR']:
-	if patnr == 0:
-		patnr = i
+	
 	#get date of admission & convert to workable format
-	admission = patdf.loc[counter,labelad][0:-9]
+	admission = patdf.loc[counter,labelDict['opname']][0:-9]
 	admission = datetime.datetime.strptime(admission, '%d%b%y').date()
 	#get date of discharge & convert to workable format, save copy for later use in logic
-	discharge = patdf.loc[counter,labeldi][0:-9]
+	discharge = patdf.loc[counter,labelDict['ontslag']][0:-9]
 	discharge = datetime.datetime.strptime(discharge, '%d%b%y').date()
 	#get diagnosis code
-	diagCode = patdf.loc[counter,labelco]
+	diagCode = patdf.loc[counter,labelDict['code']]
 	#when it's a different patient, check again for possible readmission
 	if patnr != i:
 		patchecker = True
-		if readm:
+		if patnr == 1:
+			print('running code...')
+		elif readm:
 			patlistTrue.append(patnr)
 			readm = False
 		elif not readm:
@@ -70,5 +69,6 @@ if readm:
 else:
 	patlistFalse.append(patnr)
 
-print("patients that got readmitted: ", patlistTrue)
-print("patients that didn't get readmitted: ", patlistFalse)
+#print("patients that got readmitted: ", patlistTrue)
+#print("patients that didn't get readmitted: ", patlistFalse)
+print("Total amount of ids:", len(patlistTrue), len(patlistFalse))
