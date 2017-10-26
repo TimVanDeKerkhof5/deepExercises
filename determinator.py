@@ -16,7 +16,7 @@ prevdischarge = datetime.datetime(1000, 10, 10).date()
 prevadmission = prevdischarge
 #set prevdischarge & prevadmission to impossible date to prevent errors
 for i in patdf['PATNR']:
-	
+
 	#get date of admission & convert to workable format
 	admission = patdf.loc[counter,labelDict['opname']][0:-9]
 	admission = datetime.datetime.strptime(admission, '%d%b%y').date()
@@ -72,3 +72,10 @@ else:
 #print("patients that got readmitted: ", patlistTrue)
 #print("patients that didn't get readmitted: ", patlistFalse)
 print("Total amount of ids:", len(patlistTrue), len(patlistFalse))
+
+def databuilder():
+	pathdict = {'cardiologie':'/home/kerkt02/patdata/DM_CARDILOGIE.csv','subtraject':'/home/kerkt02/patdata/QUERY_FOR_DM_SUBTRAJECTEN.csv','opname':'QUERY_FOR_DM_LGS_OPNAME.csv'}
+	dfcardio = pd.read_csv(pathdict['cardiologie'],header=0,low_memory=False,encoding='ISO-8859-1')
+	dfsub = pd.read_csv(pd.read_csv(pathdict['subtraject'],header=0,low_memory=False,encoding='ISO-8859-1')
+	dfadmission = pd.read_csv(pathdict['opname'],header=0,low_memory=False,encoding='ISO-8859-1')
+
