@@ -4,6 +4,8 @@ from collections import defaultdict as dd
 #pathdict is global for easy access throughout the entire file
 pathdict = {'cardiologie':'/home/kerkt02/patdata/DM_CARDIOLOGIE.csv', 'subtraject':'/home/kerkt02/patdata/QUERY_FOR_DM_SUBTRAJECTEN.csv','opname':'/home/kerkt02/patdata/QUERY_FOR_DM_LGS_OPNAME.csv'}
 
+def cdb(df):
+	
 
 def databuilder():
 	labelP = 'PATNR'
@@ -29,7 +31,21 @@ def databuilder():
 			patientIDs['Patnr'].append(row['PATNR'])
 			patientIDs['opname_dt'].append(row['opname_dt'])
 			patientIDs['ontslag_dt'].append(row['ontslag_dt'])
-	print(patientIDs)
+			#insert code for determination of zorgtrajectnr
+			#print(row['PATNR'])
+			#print(row['opname_dt'])
+			uniquenr = set()
+			uniquenr.clear()
+			for indexx,roww in dfsub.loc[dfsub['ZIEKTEGEVALNUMMER'] == i].iterrows():
+				uniquenr.add(roww['ZORGTRAJECTNR'])
+			if(len(uniquenr) > 1):
+				patientIDs['zorgtrajectnr'].append(list(uniquenr)[1])
+			else:
+				patientIDs['zorgtrajectnr'].append(list(uniquenr)[0])
+
+	readdf = pd.DataFrame.from_dict(patientIDs)
+	readdf = readdf.sort_values(by=['Patnr','zorgtrajectnr'])
+	return readdf
 def main():
 	databuilder()
 
