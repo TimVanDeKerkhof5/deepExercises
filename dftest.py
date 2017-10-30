@@ -1,3 +1,4 @@
+import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import datetime
@@ -9,7 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn import tree
 #COPIED STRING FOR PRESERVATION
 #HEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_otaal','Cholesterol_ldl']
-HEADERS = ['HB','HT','bloeddruk','Glucose','Kreat','Cholesterol_totaal']
+HEADERS = ['lengte','gewicht','HB','HT','bloeddruk','Glucose','Kreat','Cholesterol_totaal']
 LHEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl','lbl']
 LABEL = ['lbl']
 #pathdict is global for easy access throughout the entire file
@@ -130,25 +131,35 @@ def datainit(patList):
 		counter += 1
 	dfcardio['lbl'] = lbl.values
 	print('succesfully added a column!')
-	print(dfcardio)
+	#print(dfcardio)
 
 def split_dataset(dataset, train_percentage, feature_headers, target_header):
+	print("splitting the dataset...")
 	datasett = dataset[LHEADERS].dropna()
 	check = datasett[target_header]
 	datasett = datasett[feature_headers]
 	datasett = datasett
-	print(datasett, check)
+	#print(datasett, check)
 	train_x, test_x, train_y, test_y = train_test_split(datasett, check, train_size=train_percentage)
 	return train_x, test_x, train_y, test_y
 def rfc(features, target):
+	print("creating the classifir...")
 	cl = RandomForestClassifier()
 	cl.fit(features,target)
 	return cl
-def vistree(t):
-	iter = 0
-	for treerfc in t.estimators_:
-		with open('tree_'+str(iter)+'png','w') as tr:
-			tr = tree.export_graphviz(treerfc, out_file = tr)
+def vistree(t,features):
+	print("visualizing important branches with numpy and exporting...")
+	importances = []
+	importances = t.feature_importances_
+	indices = np.argsort(importances)
+	headerorder = []
+	for i in indices:
+		headerorder.append(HEADERS[i])
+	plt.title('Feature Importance')
+	plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+	plt.yticks(range(len(indices)), features[headerorder])
+	plt.xlabel('Relative Importance')
+	plt.savefig('treegraph.png')
 
 def main():
 	dbdf = databuilder()
@@ -159,5 +170,5 @@ def main():
 	predictions = trained_model.predict(test_x)
 	print("train accuracy: ",accuracy_score(train_y, trained_model.predict(train_x)))
 	print("test accuracy: ",accuracy_score(test_y, predictions))
-	#vistree(trained_model)
+	vistree(trained_model, train_x)
 main()
