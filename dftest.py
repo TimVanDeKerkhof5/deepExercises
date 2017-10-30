@@ -10,7 +10,7 @@ from sklearn.metrics import accuracy_score
 from sklearn import tree
 #COPIED STRING FOR PRESERVATION
 #HEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_otaal','Cholesterol_ldl']
-HEADERS = ['lengte','gewicht','HB','HT','bloeddruk','Glucose','Kreat','Cholesterol_totaal']
+HEADERS = ['Leukocyten','Trombocyten','gewicht','bloeddruk']
 LHEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl','lbl']
 LABEL = ['lbl']
 #pathdict is global for easy access throughout the entire file
