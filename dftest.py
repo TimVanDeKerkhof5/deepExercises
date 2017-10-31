@@ -131,15 +131,15 @@ def datainit(patList):
 		counter += 1
 	dfcardio['lbl'] = lbl.values
 	print('succesfully added a column!')
-	#print(dfcardio)
 
 def split_dataset(dataset, train_percentage, feature_headers, target_header):
 	print("splitting the dataset...")
+	#dropna vervangen zodra imputation/onehot encoding is toegepast
 	datasett = dataset[LHEADERS].dropna()
 	check = datasett[target_header]
 	datasett = datasett[feature_headers]
-	datasett = datasett
-	#print(datasett, check)
+
+
 	train_x, test_x, train_y, test_y = train_test_split(datasett, check, train_size=train_percentage)
 	return train_x, test_x, train_y, test_y
 def rfc(features, target):
