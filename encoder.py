@@ -21,6 +21,8 @@ def main():
 	for con in headerlistcon:
 		trainerdict[con] = dataimputer(con)
 
+	for cat in headerlistcat:
+		makedummies(cat)
 	print(trainerdict)
 
 def makeonehot(s):
@@ -28,6 +30,8 @@ def makeonehot(s):
 	s[pd.isnull(s)] = 'NaN'
 	o = encoder.fit_transform(s)
 	return o
+def makedummies(d):
+	print(pd.get_dummies(data[d]))
 
 def dobconverter(l):
 	now = pd.Timestamp(dt.datetime.now())
@@ -39,11 +43,4 @@ def dataimputer(t):
 	imputer = Imputer(missing_values=np.nan, strategy='mean', axis=0)
 	c=imputer.fit_transform(data[[t]]).ravel()
 	return c
-def isnumber(x):
-	try:
-		float(x)
-		return True
-	except:
-		return False
-
 main()

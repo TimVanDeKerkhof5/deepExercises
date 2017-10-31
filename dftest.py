@@ -172,3 +172,4 @@ def main():
 	print("test accuracy: ",accuracy_score(test_y, predictions))
 	vistree(trained_model, train_x)
 main()
+
