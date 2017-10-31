@@ -1,4 +1,5 @@
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelEncoder
 import pandas as pd
 import numpy as np
 import datetime as dt
@@ -24,6 +25,8 @@ def main():
 	for cat in headerlistcat:
 		makedummies(cat)
 	print(trainerdict)
+	makedummiesdif(headerlistcat)
+	print(data)
 
 def makeonehot(s):
 	encoder = LabelBinarizer()
@@ -32,6 +35,15 @@ def makeonehot(s):
 	return o
 def makedummies(d):
 	print(pd.get_dummies(data[d]))
+
+def makedummiesdif(d):
+	le = LabelEncoder()
+	for feature in d:
+		try:
+			data[feature] = le.fit_transform(data[feature])
+		except:
+			print('Error encoding: '+feature)
+	
 
 def dobconverter(l):
 	now = pd.Timestamp(dt.datetime.now())
