@@ -1,18 +1,27 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import datetime
+import datetime as dt
 import sklearn as sk
 from collections import defaultdict as dd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import tree
+from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import Imputer
 #COPIED STRING FOR PRESERVATION
 #HEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_otaal','Cholesterol_ldl']
-HEADERS = ['Leukocyten','Trombocyten','gewicht','bloeddruk']
+HEADERS = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_CVA_TIA','vrgeschiedenis_vaatlijden','vrgeschiedenis_hartfalen','vrgeschiedenis_maligniteit','vrgeschiedenis_COPD','vrgeschiedenis_atriumfibrilleren','TIA','CVA_Niet_Bloedig','CVA_Bloedig','LV_Functie','dialyse','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie', 'Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
 LHEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl','lbl']
 LABEL = ['lbl']
+
+#headers that are categorical and continuous:
+headerlistcat = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_CVA_TIA','vrgeschiedenis_vaatlijden','vrgeschiedenis_hartfalen','vrgeschiedenis_maligniteit','vrgeschiedenis_COPD','vrgeschiedenis_atriumfibrilleren','TIA','CVA_Niet_Bloedig','CVA_Bloedig','LV_Functie','dialyse','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie']
+headerlistcon = ['Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
+
+
 #pathdict is global for easy access throughout the entire file
 pathdict = {'cardiologie':'/home/kerkt02/patdata/DM_CARDIOLOGIE.csv', 'subtraject':'/home/kerkt02/patdata/QUERY_FOR_DM_SUBTRAJECTEN.csv','opname':'/home/kerkt02/patdata/QUERY_FOR_DM_LGS_OPNAME.csv'}
 labelDict = {'opname':'opname_dt','ontslag':'ontslag_dt','code':'zorgtrajectnr'}
@@ -29,16 +38,16 @@ def cdb(df):
 	z = False
 	readTrue = []
 	prevzCode = 0
-	prevdischarge = datetime.datetime(1000, 10, 10).date()
+	prevdischarge = dt.datetime(1000, 10, 10).date()
 	prevadmission = prevdischarge
 	#set prevdischarge & prevadmission to impossible date to prevent errors
 	for i in df['Patnr']:
 		#get date of admission & convert to workable format
 		admission = df.loc[counter,labelDict['opname']][0:-9]
-		admission = datetime.datetime.strptime(admission, '%d%b%y').date()
+		admission = dt.datetime.strptime(admission, '%d%b%y').date()
 		#get date of discharge & convert to workable format, save copy for later use in logic
 		discharge = df.loc[counter,labelDict['ontslag']][0:-9]
-		discharge = datetime.datetime.strptime(discharge, '%d%b%y').date()
+		discharge = dt.datetime.strptime(discharge, '%d%b%y').date()
 		#get znosis code
 		zCode = df.loc[counter,labelDict['code']]
 		#when it's a different patient, check again for possible readmission
@@ -137,16 +146,33 @@ def split_dataset(dataset, train_percentage, feature_headers, target_header):
 	#dropna vervangen zodra imputation/onehot encoding is toegepast
 	check = dataset[target_header]
 	dataset = dataset[feature_headers]
-	
 
 
-	train_x, test_x, train_y, test_y = train_test_split(datasett, check, train_size=train_percentage)
+
+	train_x, test_x, train_y, test_y = train_test_split(dataset, check, train_size=train_percentage)
 	return train_x, test_x, train_y, test_y
 def rfc(features, target):
-	print("creating the classifir...")
+	print("creating the classifier...")
 	cl = RandomForestClassifier()
 	cl.fit(features,target)
 	return cl
+
+def onehotdummy(d):
+	le = LabelEncoder()
+	for feature in d:
+		dfcardio[feature] = le.fit_transform(dfcardio[feature])
+
+def dobconverter(l):
+	now = pd.Timestamp(dt.datetime.now())
+	dfcardio[l] = pd.to_datetime(dfcardio[l], format='%Y-%m-%d')
+	dfcardio[l] = dfcardio[l].where(dfcardio[l] < now, dfcardio[l] - np.timedelta64(100, 'Y'))
+	dfcardio[l] = (now - dfcardio[l]).astype('<m8[Y]')
+
+def dataimputer(t):
+	imputer = Imputer(missing_values=np.nan, strategy='mean', axis=0)
+	c=imputer.fit_transform(dfcardio[[t]]).ravel()
+	return c
+
 def vistree(t,features):
 	print("visualizing important branches with numpy and exporting...")
 	importances = []
@@ -162,14 +188,21 @@ def vistree(t,features):
 	plt.savefig('treegraph.png')
 
 def main():
+	dobconverter('Geboortedatum')
+	onehotdummy(headerlistcat)
+	for con in headerlistcon:
+		dfcardio[con] = dataimputer(con)
+
 	dbdf = databuilder()
 	ListTrue = cdb(dbdf)
 	datainit(ListTrue)
+
 	train_x, test_x, train_y, test_y = split_dataset(dfcardio, 0.7, HEADERS, LABEL)
 	trained_model = rfc(train_x, train_y)
 	predictions = trained_model.predict(test_x)
 	print("train accuracy: ",accuracy_score(train_y, trained_model.predict(train_x)))
 	print("test accuracy: ",accuracy_score(test_y, predictions))
 	vistree(trained_model, train_x)
+
 main()
 
