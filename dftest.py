@@ -164,8 +164,14 @@ def dataimputer(t):
 def split_dataset(dataset, train_percentage, feature_headers, target_header):
 	print("splitting the dataset...")
 	#dropna vervangen zodra imputation/onehot encoding is toegepast
+<<<<<<< HEAD
 	check = trainerdict[target_header]
 	datasett = datasett[feature_headers]
+=======
+	check = dataset[target_header]
+	dataset = dataset[feature_headers]
+	
+>>>>>>> develop
 
 
 	train_x, test_x, train_y, test_y = train_test_split(datasett, check, train_size=train_percentage)
