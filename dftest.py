@@ -173,11 +173,6 @@ def dobconverter(l):
 	dfcardio[l] = dfcardio[l].where(dfcardio[l] < now, dfcardio[l] - np.timedelta64(100, 'Y'))
 	dfcardio[l] = (now - dfcardio[l]).astype('<m8[Y]')
 
-def dataimputer(t):
-	imputer = Imputer(missing_values=np.nan, strategy='mean', axis=0)
-	c=imputer.fit_transform(dfcardio[[t]]).ravel()
-	return c
-
 def vistree(t,features):
 	print("visualizing important branches with numpy and exporting...")
 	importances = []
