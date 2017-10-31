@@ -3,16 +3,28 @@ import pandas as pd
 import numpy as np
 import datetime
 import sklearn as sk
+import datetime as dt
 from collections import defaultdict as dd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import tree
+from sklearn.preprocessing import Imputer
+from sklearn.preprocessing import LabelBinarizer
+
+#Headerlist that defines categorical, and continuous variables
+headerlistcat = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_CVA_TIA','vrgeschiedenis_vaatlijden','vrgeschiedenis_hartfalen','vrgeschiedenis_maligniteit','vrgeschiedenis_COPD','vrgeschiedenis_atriumfibrilleren','TIA','CVA_Niet_Bloedig','CVA_Bloedig','LV_Functie','dialyse','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie']
+headerlistcon = ['Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
+
 #COPIED STRING FOR PRESERVATION
 #HEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_otaal','Cholesterol_ldl']
 HEADERS = ['Leukocyten','Trombocyten','gewicht','bloeddruk']
 LHEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl','lbl']
 LABEL = ['lbl']
+
+#values are printed to dictionary, as the dataframe does not support onehot encoded values.
+trainerdict = {}
+
 #pathdict is global for easy access throughout the entire file
 pathdict = {'cardiologie':'/home/kerkt02/patdata/DM_CARDIOLOGIE.csv', 'subtraject':'/home/kerkt02/patdata/QUERY_FOR_DM_SUBTRAJECTEN.csv','opname':'/home/kerkt02/patdata/QUERY_FOR_DM_LGS_OPNAME.csv'}
 labelDict = {'opname':'opname_dt','ontslag':'ontslag_dt','code':'zorgtrajectnr'}
@@ -119,6 +131,7 @@ def databuilder():
 	readdf = pd.DataFrame.from_dict(patientIDs)
 	readdf = readdf.sort_values(by=['Patnr','zorgtrajectnr'])
 	return readdf
+
 def datainit(patList):
 	print('Running datainit...')
 	lbl = pd.Series()
@@ -131,19 +144,34 @@ def datainit(patList):
 		counter += 1
 	dfcardio['lbl'] = lbl.values
 	print('succesfully added a column!')
+	trainerdict['lbl'] = list(lbl)
+def makeonehot(h):
+	encoder = LabelBinarizer()
+	h[pd.isnull(h)] = 'NaN'
+	o = encoder.fit_transform(h)
+	return o
 
+def dobconverter(l):
+	now = pd.Timestamp(dt.datetime.now())
+	dfcardio[l] = pd.to_datetime(dfcardio[l], format='%Y-%m-%d')
+	dfcardio[l] = dfcardio[l].where(dfcardio[l] < now, dfcardio[l] - np.timedelta64(100, 'Y'))
+	dfcardio[l] = (now - dfcardio[l]).astype('<m8[Y]')
+
+def dataimputer(t):
+	imputer = Imputer(missing_values=np.nan, strategy='mean', axis=0)
+	c = imputer.fit_transform(dfcardio[[t]]).ravel()
+	return c
 def split_dataset(dataset, train_percentage, feature_headers, target_header):
 	print("splitting the dataset...")
 	#dropna vervangen zodra imputation/onehot encoding is toegepast
-	datasett = dataset[LHEADERS].dropna()
-	check = datasett[target_header]
+	check = trainerdict[target_header]
 	datasett = datasett[feature_headers]
 
 
 	train_x, test_x, train_y, test_y = train_test_split(datasett, check, train_size=train_percentage)
 	return train_x, test_x, train_y, test_y
 def rfc(features, target):
-	print("creating the classifir...")
+	print("creating the classifier...")
 	cl = RandomForestClassifier()
 	cl.fit(features,target)
 	return cl
@@ -165,10 +193,16 @@ def main():
 	dbdf = databuilder()
 	ListTrue = cdb(dbdf)
 	datainit(ListTrue)
-	train_x, test_x, train_y, test_y = split_dataset(dfcardio, 0.7, HEADERS, LABEL)
-	trained_model = rfc(train_x, train_y)
-	predictions = trained_model.predict(test_x)
-	print("train accuracy: ",accuracy_score(train_y, trained_model.predict(train_x)))
-	print("test accuracy: ",accuracy_score(test_y, predictions))
-	vistree(trained_model, train_x)
+	for cat in headerlistcat:
+		dfcardio[cat] = makeonehot(dfcardio[cat])
+	dobconverter('Geboortedatum')
+	for con in headerlistcon:
+		dfcardio[con] = dataimputer(con)
+	#train_x, test_x, train_y, test_y = split_dataset(dfcardio, 0.7, HEADERS, LABEL)
+	#trained_model = rfc(train_x, train_y)
+	#predictions = trained_model.predict(test_x)
+	#print("train accuracy: ",accuracy_score(train_y, trained_model.predict(train_x)))
+	#print("test accuracy: ",accuracy_score(test_y, predictions))
+	#vistree(trained_model, train_x)
+	print(dfcardio)
 main()
