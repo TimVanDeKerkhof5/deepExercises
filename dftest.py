@@ -6,7 +6,10 @@ import sklearn as sk
 import datetime as dt
 from collections import defaultdict as dd
 from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import tree
 from sklearn.preprocessing import LabelBinarizer
@@ -19,8 +22,8 @@ headerlistcon = ['Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR',
 
 
 #COPIED STRING FOR PRESERVATION
-#HEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_otaal','Cholesterol_ldl']
-HEADERS = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_CVA_TIA','vrgeschiedenis_vaatlijden','vrgeschiedenis_hartfalen','vrgeschiedenis_maligniteit','vrgeschiedenis_COPD','vrgeschiedenis_atriumfibrilleren','TIA','CVA_Niet_Bloedig','CVA_Bloedig','LV_Functie','dialyse','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie', 'Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
+#HEADERS = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_CVA_TIA','vrgeschiedenis_vaatlijden','vrgeschiedenis_hartfalen','vrgeschiedenis_maligniteit','vrgeschiedenis_COPD','vrgeschiedenis_atriumfibrilleren','TIA','CVA_Niet_Bloedig','CVA_Bloedig','LV_Functie','dialyse','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie', 'Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
+HEADERS = ['DiagnoseCode', 'OpnameUitvoerder','OpnameBewegingVolgnr','OpnameBehandelaar','vrgeschiedenis_myochardinfarct','vrgeschiedenis_PCI','vrgeschiedenis_CABG','vrgeschiedenis_vaatlijden','vrgeschiedenis_maligniteit','vrgeschiedenis_atriumfibrilleren','CVA_Niet_Bloedig','LV_Functie','riscf_roken','riscf_familieanamnese','riscf_hypertensie','riscf_hypercholesterolemie','riscf_diabetes','roken','Radialis','Femoralis','Brachialis','vd_1','vd_2','vd_3','graftdysfunctie', 'Geboortedatum','lengte','gewicht','bloeddruk','HB','HT','INR','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl']
 LHEADERS = ['DiagnoseCode','lengte','gewicht','bloeddruk','HB','HT','Glucose','Kreat','Trombocyten','Leukocyten','Cholesterol_totaal','Cholesterol_ldl','lbl']
 LABEL = ['lbl']
 
@@ -157,10 +160,16 @@ def split_dataset(dataset, train_percentage, feature_headers, target_header):
 	return train_x, test_x, train_y, test_y
 
 def rfc(features, target):
-	print("creating the classifier...")
+	print("creating the Random forest classifier...")
 	cl = RandomForestClassifier()
 	cl.fit(features,target)
 	return cl
+
+def gtc(features, target):
+	print("creating the Gradient tree boosting classifier...")
+	clf = GradientBoostingClassifier(n_estimators=1000,learning_rate=0.3,max_depth=1,random_state=0)
+	clf.fit(features, target)
+	return clf
 
 def onehotdummy(d):
 	le = LabelEncoder()
@@ -173,7 +182,7 @@ def dobconverter(l):
 	dfcardio[l] = dfcardio[l].where(dfcardio[l] < now, dfcardio[l] - np.timedelta64(100, 'Y'))
 	dfcardio[l] = (now - dfcardio[l]).astype('<m8[Y]')
 
-def vistree(t,features):
+def vistree(t,features,filename):
 	print("visualizing important branches with numpy and exporting...")
 	importances = []
 	importances = t.feature_importances_
@@ -185,7 +194,7 @@ def vistree(t,features):
 	plt.barh(range(len(indices)), importances[indices], color='b', align='center')
 	plt.yticks(range(len(indices)), features[headerorder])
 	plt.xlabel('Relative Importance')
-	plt.savefig('treegraph.png')
+	plt.savefig(filename)
 
 def main():
 	dobconverter('Geboortedatum')
@@ -199,9 +208,12 @@ def main():
 	train_x, test_x, train_y, test_y = split_dataset(dfcardio, 0.7, HEADERS, LABEL)
 	trained_model = rfc(train_x, train_y)
 	predictions = trained_model.predict(test_x)
+	gradientmodel = gtc(train_x, train_y)
+	print(gradientmodel.score(test_x, test_y))
 	print("train accuracy: ",accuracy_score(train_y, trained_model.predict(train_x)))
 	print("test accuracy: ",accuracy_score(test_y, predictions))
-	vistree(trained_model, train_x)
+	vistree(trained_model, train_x, 'rftreegraph.png')
+	vistree(gradientmodel, train_x, 'gdctreegraph.png')
 	#print(dfcardio)
 
 main()
